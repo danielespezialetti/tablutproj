@@ -1,40 +1,41 @@
 package aigenetics;
 
+import java.io.Serializable; // <--- AGGIUNTO
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * Gestisce una collezione di individui (HeuristicWeights).
- */
-public class Population {
+// AGGIUNTO 'implements Serializable'
+public class Population implements Serializable {
     
+    private static final long serialVersionUID = 1L; // <--- AGGIUNTO (Buona pratica)
+
     public List<HeuristicWeights> individuals;
 
-    public Population(int size, boolean initialize) {
-        this.individuals = new ArrayList<>(size);
-        if (initialize) {
+    public Population(int size, boolean init) {
+        individuals = new ArrayList<>(size);
+        if (init) {
             for (int i = 0; i < size; i++) {
-                this.individuals.add(new HeuristicWeights());
+                individuals.add(new HeuristicWeights());
             }
         }
     }
 
-    public void add(HeuristicWeights individual) {
-        this.individuals.add(individual);
+    public void add(HeuristicWeights h) {
+        individuals.add(h);
+    }
+
+    public HeuristicWeights get(int i) {
+        return individuals.get(i);
     }
 
     public int size() {
-        return this.individuals.size();
-    }
-
-    public HeuristicWeights get(int index) {
-        return this.individuals.get(index);
+        return individuals.size();
     }
 
     public HeuristicWeights getFittest() {
-        return this.individuals.stream()
-                   .max(Comparator.comparingDouble(ind -> ind.fitness))
-                   .orElse(null);
+        return individuals.stream()
+                .max(Comparator.comparingDouble(HeuristicWeights::getFitness))
+                .orElse(null);
     }
 }

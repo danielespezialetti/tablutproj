@@ -1,64 +1,62 @@
 package aigenetics;
 
-import java.util.Random;
 import java.util.concurrent.Callable;
-
+import java.util.Random;
 import ailogicbusiness.MyAIPlayerLogic;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 
-// TODO: Importa le classi REALI (State, Turn)
-
-/**
- * Un task parallelo che calcola la fitness di UN individuo
- * facendolo giocare N partite contro avversari casuali.
- */
 public class FitnessEvaluator implements Callable<Double> {
 
-    private HeuristicWeights individualToEvaluate;
+    private HeuristicWeights individual;
     private Population opponentPopulation;
     private State.Turn myRole;
     private int numGames;
-    private int trainingDepth;
+    private int depth;
     private Random rand = new Random();
 
     public FitnessEvaluator(HeuristicWeights individual, Population opponents, 
                             State.Turn role, int numGames, int depth) {
-        this.individualToEvaluate = individual;
+        this.individual = individual;
         this.opponentPopulation = opponents;
         this.myRole = role;
         this.numGames = numGames;
-        this.trainingDepth = depth;
+        this.depth = depth;
     }
 
     @Override
     public Double call() throws Exception {
         int wins = 0;
+        int draws = 0;
 
         for (int i = 0; i < numGames; i++) {
             // Scegli un avversario a caso dalla popolazione opposta
-            int oppIndex = rand.nextInt(opponentPopulation.size());
-            HeuristicWeights opponentWeights = opponentPopulation.get(oppIndex);
+            HeuristicWeights opponentWeights = opponentPopulation.get(rand.nextInt(opponentPopulation.size()));
 
-            // Crea i giocatori per questa simulazione
-            MyAIPlayerLogic myPlayer = new MyAIPlayerLogic(individualToEvaluate, myRole);
+            // Configura i giocatori
+            MyAIPlayerLogic myPlayer = new MyAIPlayerLogic(individual, myRole);
             MyAIPlayerLogic oppPlayer = new MyAIPlayerLogic(opponentWeights, 
                 (myRole == State.Turn.WHITE) ? State.Turn.BLACK : State.Turn.WHITE);
             
             GameSimulator simulator;
             if (myRole == State.Turn.WHITE) {
-                simulator = new GameSimulator(myPlayer, oppPlayer, trainingDepth);
+                simulator = new GameSimulator(myPlayer, oppPlayer, depth);
             } else {
-                simulator = new GameSimulator(oppPlayer, myPlayer, trainingDepth);
+                simulator = new GameSimulator(oppPlayer, myPlayer, depth);
             }
             
-            State.Turn winner = simulator.simulateGame();
+            // Gioca
+            State.Turn result = simulator.simulateGame();
             
-            if ((winner == State.Turn.WHITEWIN && myRole == State.Turn.WHITE) ||
-                (winner == State.Turn.BLACKWIN && myRole == State.Turn.BLACK)) {
+            // Calcola Punteggio
+            if ((result == State.Turn.WHITEWIN && myRole == State.Turn.WHITE) ||
+                (result == State.Turn.BLACKWIN && myRole == State.Turn.BLACK)) {
                 wins++;
+            } else if (result == State.Turn.DRAW) {
+                draws++;
             }
         }
         
-        return (double) wins / (double) numGames;
+        // Calcolo Fitness: (Vittorie + 0.5 * Pareggi) / Totale Partite
+        return (wins + (0.15 * draws)) / (double) numGames;
     }
 }

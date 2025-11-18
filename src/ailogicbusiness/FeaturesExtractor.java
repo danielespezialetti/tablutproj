@@ -56,25 +56,26 @@ public class FeaturesExtractor {
 		int kr = this.kingPos[0];
 		int kc = this.kingPos[1];
 		
-		int[] kingFreedom = this.feature_kingFreedom(kr, kc);
 		int[] kingThreats = this.feature_kingThreats(kr, kc);
+		int[] totalMobility = this.feature_totalMobility();
 
 		double[] features = {
-			(double) this.feature_whiteCount(), 
-			(double) -this.feature_blackCount(),
-			(double) -this.feature_kingManhattanDist(kr, kc),
-			(double) kingFreedom[0], // UP
-			(double) kingFreedom[1], // RIGHT
-			(double) kingFreedom[2], // DOWN
-			(double) kingFreedom[3], // LEFT
-			(double) -kingThreats[0], // Minacce adiacenti (0-4)
-			(double) -kingThreats[1], // Minacce a tenaglia (0-4)
-			(double) -this.feature_blackProximity(kr, kc),
-			(double) this.feature_whiteProximity(kr, kc),
-			(double) this.feature_kingGuards(kr, kc),
-			(double) this.feature_supportSoldiers(kr, kc),
-			(double) -this.feature_whiteInDanger(),
-			(double) this.feature_blackInDanger()
+			(double) this.feature_whiteCount()/8.0, 
+			(double) -this.feature_blackCount()/16.0,
+			(double) -kingThreats[0]/4.0, // Minacce adiacenti (0-4)
+			(double) -kingThreats[1]/2.0, // Minacce a tenaglia (0-4)
+			(double) this.feature_kingGuards(kr, kc)/4.0,
+			(double) this.feature_supportSoldiers(kr, kc)/2.0,
+			(double) -this.feature_whiteInDanger()/8.0,
+			(double) this.feature_blackInDanger()/16.0,
+			(double) this.feature_multipleEscapeRoutes(kr, kc, kingThreats[1])/2.0,
+			(double) totalMobility[0]/40.0,
+			(double) -totalMobility[1]/48.0,
+			//dynamic features
+			(double) -this.feature_kingManhattanDist(kr, kc)/6.0,
+			(double)  this.feature_kingFreedom(kr, kc),
+			(double) -this.feature_blackProximity(kr, kc)/16.0,
+			(double) this.feature_whiteProximity(kr, kc)/8.0,
 		};
 		
 		return features;
@@ -126,28 +127,28 @@ public class FeaturesExtractor {
 	 * CORRETTO: Usa la nuova logica di pathClearBetween
 	 * che sa che il Re non può passare sul Trono (Regola 2).
 	 */
-	private int[] feature_kingFreedom(int kr, int kc) {
-		int freedom[] = {0, 0, 0, 0};
+	private int feature_kingFreedom(int kr, int kc) {
+		int freedom=0;
 		
 		// UP
 		for (int i = kr - 1; i >= 0; i--) {
 			if (!pathClearBetween(kingPos, new int[]{i, kc}, Pawn.KING)) break;
-			freedom[0]++;
+			freedom++;
 		}
 		// RIGHT
 		for (int j = kc + 1; j < 9; j++) {
 			if (!pathClearBetween(kingPos, new int[]{kr, j}, Pawn.KING)) break;
-			freedom[1]++;
+			freedom++;
 		}
 		// DOWN
 		for (int i = kr + 1; i < 9; i++) {
 			if (!pathClearBetween(kingPos, new int[]{i, kc}, Pawn.KING)) break;
-			freedom[2]++;
+			freedom++;
 		}
 		// LEFT
 		for (int j = kc - 1; j >= 0; j--) {
 			if (!pathClearBetween(kingPos, new int[]{kr, j}, Pawn.KING)) break;
-			freedom[3]++;
+			freedom++;
 		}
 		return freedom;
 	}
@@ -226,6 +227,41 @@ public class FeaturesExtractor {
 		return threats;
 	}
 	
+	private int feature_multipleEscapeRoutes(int kr, int kc, int kingThreats) {
+	    int viablePaths = 0;
+	    
+	    // Controlla ogni direzione cardinale
+	    int[][] directions = {{-1,0}, {0,1}, {1,0}, {0,-1}};
+	    
+	    for (int[] dir : directions) {
+	        int r = kr + dir[0];
+	        int c = kc + dir[1];
+	        
+	        // Verifica se esiste un percorso chiaro verso un bordo di fuga
+	        while (!isOutOfBounds(r, c)) {
+	            if (isObstacle(r, c, Pawn.KING, kr, kc)) break;
+	            if (isEscapeTile(r, c)) {
+	                viablePaths++;
+	                break;
+	            }
+	            r += dir[0];
+	            c += dir[1];
+	        }
+	    }
+	    
+	    if (viablePaths >= 2 && kingThreats==0) {
+	        return 2;  // Tuicha rimane massimo
+	    } else if (viablePaths == 1) {
+	        if (kingThreats > 0) {
+	            return -2;    // Grave pericolo: via non salva
+	        } else if (kingThreats == 0) {
+	            return 1;   // Moderato pericolo: via moderatamente preziosa
+	        }
+	    } else if (viablePaths>=2 && kingThreats>0){
+	        return -2;
+	    }
+		return 0;
+	}
 	// Helper per kingThreats
 	private boolean isHostileForKing(int r, int c) {
 		if (isOutOfBounds(r, c)) return true; // Bordo è ostile
@@ -566,12 +602,43 @@ public class FeaturesExtractor {
 	
 	private boolean isEscapeTile(int r, int c) {
 		if (isOutOfBounds(r,c)) return false;
-		if (CITADELS[r][c] == 2) return false; // No Trono
-		if (CITADELS[r][c] == 1) return false; // No Accampamenti
+		if (CITADELS[r][c] == 2) return false;
+		if (CITADELS[r][c] == 1) return false;
 		return r == 0 || r == 8 || c == 0 || c == 8;
 	}
 	
-	// --- Metodi getter/setter (invariati) ---
+	private int[] feature_totalMobility() {
+	    int whiteMobility = 0;
+	    int blackMobility = 0;
+	    
+	    for (int[] pos : this.whiteSoldiers) {
+	        whiteMobility += countLegalMoves(pos, Pawn.WHITE);
+	    }
+	    whiteMobility += countLegalMoves(this.kingPos, Pawn.KING);
+	    
+	    for (int[] pos : this.blackPawns) {
+	        blackMobility += countLegalMoves(pos, Pawn.BLACK);
+	    }
+	    int [] ris = {whiteMobility, blackMobility};
+	    return ris;
+	}
+
+	private int countLegalMoves(int[] pos, Pawn type) {
+	    int count = 0;
+	    int[][] directions = {{-1,0}, {0,1}, {1,0}, {0,-1}};
+	    
+	    for (int[] dir : directions) {
+	        int r = pos[0] + dir[0];
+	        int c = pos[1] + dir[1];
+	        while (!isOutOfBounds(r, c) && !isObstacle(r, c, type, pos[0], pos[1])) {
+	            count++;
+	            r += dir[0];
+	            c += dir[1];
+	        }
+	    }
+	    return count;
+	}
+
 	public State getState() { return state; }
 	public void setState(State state) { this.state = state; }
 	public Pawn[][] getBoard() { return board; }

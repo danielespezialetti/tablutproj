@@ -1,40 +1,39 @@
 package aigenetics;
 
-import java.util.Random;
 import java.util.Comparator;
+import java.util.Random;
 
-/**
- * Contiene la logica "biologica" statica del GA
- * (Selezione, Crossover, Mutazione).
- */
 public class GAEngine {
 
-    private static final double MUTATION_RATE = 0.05; 
-    private static final int TOURNAMENT_SIZE = 5; 
-    private static final double ELITISM_RATE = 0.10; 
+    private static final double MUTATION_RATE = 0.15; // Tasso di mutazione
+    private static final int TOURNAMENT_SIZE = 4;     // Dimensione torneo selezione
+    private static final double ELITISM_RATE = 0.10;  // % dei migliori che passano diretti
     private static final Random rand = new Random();
 
-    public static Population evolvePopulation(Population oldPop) {
-        int popSize = oldPop.size();
-        Population newPopulation = new Population(popSize, false);
+    public static Population evolvePopulation(Population pop) {
+        Population newPop = new Population(pop.size(), false);
 
-        // 1. Elitismo
-        int elitismCount = (int) (popSize * ELITISM_RATE);
-        oldPop.individuals.sort(Comparator.comparingDouble(ind -> -ind.fitness));
+        // 1. ELITISMO: Ordina per fitness decrescente
+        // Nota il 'minus' (-) davanti a getFitness per ordinare dal più alto al più basso
+        pop.individuals.sort(Comparator.comparingDouble((HeuristicWeights i) -> -i.getFitness()));
+        
+        int elitismCount = (int) (pop.size() * ELITISM_RATE);
+        
+        // Copia i migliori nella nuova generazione
         for (int i = 0; i < elitismCount; i++) {
-            newPopulation.add(oldPop.get(i).clone());
+            newPop.add(pop.get(i).clone());
         }
 
-        // 2. Genera il resto della popolazione
-        while (newPopulation.size() < popSize) {
-            HeuristicWeights parent1 = tournamentSelection(oldPop);
-            HeuristicWeights parent2 = tournamentSelection(oldPop);
-            HeuristicWeights child = crossover(parent1, parent2);
+        // 2. CROSSOVER & MUTAZIONE per il resto
+        while (newPop.size() < pop.size()) {
+            HeuristicWeights p1 = tournamentSelection(pop);
+            HeuristicWeights p2 = tournamentSelection(pop);
+            HeuristicWeights child = crossover(p1, p2);
             mutate(child);
-            newPopulation.add(child);
+            newPop.add(child);
         }
         
-        return newPopulation;
+        return newPop;
     }
 
     private static HeuristicWeights tournamentSelection(Population pop) {
@@ -46,23 +45,20 @@ public class GAEngine {
         return tournament.getFittest();
     }
 
-    private static HeuristicWeights crossover(HeuristicWeights parent1, HeuristicWeights parent2) {
+    private static HeuristicWeights crossover(HeuristicWeights p1, HeuristicWeights p2) {
         HeuristicWeights child = HeuristicWeights.createBlankChild();
         for (int i = 0; i < HeuristicWeights.NUM_WEIGHTS; i++) {
-            if (rand.nextDouble() <= 0.5) {
-                child.weights[i] = parent1.weights[i];
-            } else {
-                child.weights[i] = parent2.weights[i];
-            }
+            // 50% di probabilità di ereditare dal genitore 1 o 2
+            child.weights[i] = (rand.nextBoolean()) ? p1.weights[i] : p2.weights[i];
         }
         return child;
     }
 
-    private static void mutate(HeuristicWeights individual) {
+    private static void mutate(HeuristicWeights ind) {
         for (int i = 0; i < HeuristicWeights.NUM_WEIGHTS; i++) {
             if (rand.nextDouble() <= MUTATION_RATE) {
-                double mutation = (rand.nextDouble() - 0.5) * 2.0; // Valore tra -1.0 e +1.0
-                individual.weights[i] += mutation;
+                // Aggiunge un valore distribuito in maniera gaussiana (68% di mutazioni tra +0.3 e -0.3)
+                ind.weights[i] += rand.nextGaussian()*0.3; 
             }
         }
     }

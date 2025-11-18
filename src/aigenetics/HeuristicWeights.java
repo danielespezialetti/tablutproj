@@ -1,30 +1,24 @@
 package aigenetics;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Random;
-import java.io.Serializable; // Utile se vuoi salvarli su file
 
-/**
- * Rappresenta un "Individuo" (Cromosoma) nel GA.
- * Contiene il suo "DNA" (i pesi) e la sua fitness.
- */
 public class HeuristicWeights implements Cloneable, Serializable {
+    private static final long serialVersionUID = 1L;
 
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-
-	// !!! MODIFICA QUESTO !!!
-    // Deve corrispondere al numero di euristiche in MyAIPlayerLogic.evaluate()
-    public static final int NUM_WEIGHTS = 4;
+    // Deve corrispondere al numero di feature estratte in MyAIPlayerLogic
+    public static final int NUM_WEIGHTS = 19; 
     
     private static final double MIN_WEIGHT = -10.0;
     private static final double MAX_WEIGHT = 10.0;
     private static final Random rand = new Random();
 
     public double[] weights;
-    public double fitness;
+    
+    // 'transient' perché non ci serve salvare il punteggio nel file .dat, 
+    // ci servono solo i pesi per giocare.
+    private double fitness; 
 
     public HeuristicWeights() {
         this.weights = new double[NUM_WEIGHTS];
@@ -34,6 +28,7 @@ public class HeuristicWeights implements Cloneable, Serializable {
         this.fitness = 0.0;
     }
 
+    // Costruttore privato per figli vuoti
     private HeuristicWeights(boolean blank) {
         this.weights = new double[NUM_WEIGHTS];
         this.fitness = 0.0;
@@ -42,11 +37,19 @@ public class HeuristicWeights implements Cloneable, Serializable {
     public static HeuristicWeights createBlankChild() {
         return new HeuristicWeights(true);
     }
+    
+    // --- Metodi per la Fitness (aggiunti per chiarezza) ---
+    public void setFitness(double fitness) {
+        this.fitness = fitness;
+    }
+
+    public double getFitness() {
+        return this.fitness;
+    }
 
     @Override
     public String toString() {
-        return "Fitness: " + String.format("%.4f", fitness) + 
-               ", Pesi: " + Arrays.toString(weights);
+        return "Fit: " + String.format("%.3f", fitness) + " W: " + Arrays.toString(weights);
     }
 
     @Override

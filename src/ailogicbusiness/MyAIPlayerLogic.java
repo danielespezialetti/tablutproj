@@ -55,7 +55,6 @@ public class MyAIPlayerLogic {
      * @return La mossa migliore trovata.
      */
     public Action findBestMove(State state, int fixedDepth, long timeoutSeconds, Set<String> realGameHistory) throws IOException{
-        
         this.startTime = System.currentTimeMillis();
         this.stopSearch = false;
         this.bestMoveFromPreviousIteration = null;
@@ -120,8 +119,6 @@ public class MyAIPlayerLogic {
             List<Action> moves = getAllPossibleMoves(state);
             bestMoveOverall = moves.isEmpty() ? null : moves.get(0);
         }
-
-        System.out.println("Depth: "+currentDepth);
         return bestMoveOverall;
     }
 
@@ -195,7 +192,7 @@ public class MyAIPlayerLogic {
      */
     private double evaluate(State state) {
         
-        // --- Caso 1: La partita è finita ---
+        // 1. Controlli Fine Partita
         if (state.getTurn().equals(State.Turn.WHITEWIN)) {
             return (myRole == State.Turn.WHITE) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
         }
@@ -206,22 +203,61 @@ public class MyAIPlayerLogic {
             return 0.0;
         }
 
-        // --- Caso 2: Euristica (Partita in corso) ---
+        // 2. Estrazione Features (Array di 15 elementi)
+        double[] feats = this.features.extractFeatures(state);
+
+        // 3. CALCOLO FASE (Logoramento Proporzionale)
+        double currentWhite = feats[0]*8.0+1;
+        double currentBlack = feats[1]*16.0;
+        
+        final double START_WHITE = 9.0;  
+        final double START_BLACK = 16.0;
+        
+        double whiteRatio = currentWhite / START_WHITE;
+        double blackRatio = currentBlack / START_BLACK;
+        
+        // 0.0 = Inizio, 1.0 = Fine
+        double boardRichness = (whiteRatio + blackRatio) / 2.0;
+        double phase = 1.0 - boardRichness;
+        
+        // sicurezza
+        phase = Math.max(0.0, Math.min(1.0, phase));
+
+
+        // 4. APPLICAZIONE PESI (IBRIDA)
         double score = 0.0;
+        int wIdx = 0; // Indice per scorrere l'array dei pesi
+
         try {
-            double[] featureValues = this.features.extractFeatures(state);
-            for (int i=0; i<featureValues.length; i++) {
-            	score += this.weights.weights[i] * featureValues[i];
+            // A. Pesi STATICI (Prime 11 Feature)
+            // Le feature da 0 a 10 usano 1 peso ciascuna
+            for (int f = 0; f < 11; f++) {
+                score += this.weights.weights[wIdx] * feats[f];
+                wIdx++; 
             }
-        } catch (ArrayIndexOutOfBoundsException|NullPointerException e) {
-        	double[] featureValues = this.features.extractFeatures(state);
-            for (int i=0; i<featureValues.length; i++) {
-            	score += featureValues[i];
+
+            // B. Pesi DINAMICI (Ultime 4 Feature)
+            // Le feature da 11 a 14 usano 2 pesi ciascuna (Start e End)
+            for (int f = 11; f < 15; f++) {
+                double wStart = this.weights.weights[wIdx];
+                double wEnd = this.weights.weights[wIdx + 1];
+                
+                // Interpolazione Lineare
+                double currentWeight = (wStart * (1.0 - phase)) + (wEnd * phase);
+                
+                score += currentWeight * feats[f];
+                
+                wIdx += 2; // 2 pesi
             }
+
+        } catch (Exception e) {
+            // Fallback sicuro
+            score = 0;
+            for(double val : feats) score += val;
         }
+
         return (myRole == State.Turn.WHITE) ? score : -score;
     }
-
     // -----------------------------------------------------------------
     // METODI HELPER DA IMPLEMENTARE (Usando le classi del progetto)
     // -----------------------------------------------------------------

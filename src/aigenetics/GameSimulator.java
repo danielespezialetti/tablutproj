@@ -1,88 +1,86 @@
 package aigenetics;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.io.IOException;
 
-import ailogicbusiness.MyAIPlayerLogic;
+import ailogicbusiness.MyAIPlayerLogic; // Assicurati che il package sia giusto
 import it.unibo.ai.didattica.competition.tablut.domain.Action;
+import ailogicbusiness.SimulationEngine;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
+import it.unibo.ai.didattica.competition.tablut.domain.StateTablut;
 
-//TODO: Importa le classi REALI del tuo progetto GitHub (State, Action, Turn, etc.)
-
-/**
-* Simula una singola partita di Tablut "headless" (senza server).
-* Usa due istanze di MyAIPlayerLogic.
-*/
 public class GameSimulator {
 
- private MyAIPlayerLogic whitePlayer;
- private MyAIPlayerLogic blackPlayer;
- private int trainingDepth;
- 
- private static final int MAX_MOVES_PER_GAME = 100; // Evita stalli infiniti
+    private MyAIPlayerLogic whitePlayer;
+    private MyAIPlayerLogic blackPlayer;
+    private int trainingDepth;
+    
+    // Limite di sicurezza per evitare partite infinite
+    private static final int MAX_MOVES_PER_GAME = 150; 
 
- public GameSimulator(MyAIPlayerLogic whitePlayer, MyAIPlayerLogic blackPlayer, int trainingDepth) {
-     this.whitePlayer = whitePlayer;
-     this.blackPlayer = blackPlayer;
-     this.trainingDepth = trainingDepth;
- }
+    public GameSimulator(MyAIPlayerLogic whitePlayer, MyAIPlayerLogic blackPlayer, int trainingDepth) {
+        this.whitePlayer = whitePlayer;
+        this.blackPlayer = blackPlayer;
+        this.trainingDepth = trainingDepth;
+    }
 
- /**
-  * Esegue l'intera partita e ritorna il vincitore.
-  * @return Il ruolo del vincitore (WHITE_WIN o BLACK_WIN) o DRAW.
- * @throws IOException 
-  */
- 
- public State.Turn simulateGame() throws IOException {
-     
-     // TODO: Crea lo stato iniziale REALE
-     // State state = new State();
-     // state.setTurn(State.Turn.WHITE);
-     State state = null; // Fittizio
+    public State.Turn simulateGame() {
+        // 1. Inizializza Stato
+        State state = new StateTablut();
+        state.setTurn(State.Turn.WHITE);
+        
+        // 2. Motore (Arbitro)
+        SimulationEngine engine = new SimulationEngine();
+        
+        // 3. Cronologia (Per i pareggi)
+        Set<String> realGameHistory = new HashSet<>();
+        realGameHistory.add(state.toString());
 
-     int moveCount = 0;
+        int moveCount = 0;
 
-     while (!isTerminal(state) && moveCount < MAX_MOVES_PER_GAME) {
-         
-         Action move;
-         
-         if (state.getTurn() == State.Turn.WHITE) {
-             // Chiama il launcher in modalità "fixedDepth"
-             move = whitePlayer.findBestMove(state, trainingDepth, 0, null);
-         } else {
-             move = blackPlayer.findBestMove(state, trainingDepth, 0, null);
-         }
+        while (moveCount < MAX_MOVES_PER_GAME) {
+            
+            // Verifica fine partita
+            if (state.getTurn().equals(State.Turn.WHITEWIN) || 
+                state.getTurn().equals(State.Turn.BLACKWIN) || 
+                state.getTurn().equals(State.Turn.DRAW)) {
+            	System.out.println("Fine Partita legit "+state.getTurn());
+                return state.getTurn();
+            }
 
-         if (move == null) {
-             //[cite_start]// Il giocatore non può muovere (sconfitta) [cite: 102]
-             return (state.getTurn() == State.Turn.WHITE) ? State.Turn.BLACKWIN : State.Turn.WHITEWIN;
-         }
+            Action move = null;
+            try {
+                // Chiede la mossa al giocatore corretto
+                if (state.getTurn().equals(State.Turn.WHITE)) {
+                    move = whitePlayer.findBestMove(state, trainingDepth, 0, realGameHistory);
+                } else {
+                    move = blackPlayer.findBestMove(state, trainingDepth, 0, realGameHistory);
+                }
 
-         //
-         // TODO: Applica la mossa REALE allo stato
-         // 1. Clona lo stato: State newState = state.clone();
-         // 2. Applica la mossa: gameRules.checkMove(newState, move);
-         // 3. state = newState;
-         //
-         
-         // Simula l'aggiornamento (sostituisci!)
-         // state = ...
-         
-         moveCount++;
-     }
+                if (move == null) {
+                    // Stallo -> Sconfitta del giocatore di turno
+                	System.out.println("Fine Partita per stallo "+state.getTurn());
+                    return (state.getTurn().equals(State.Turn.WHITE)) ? State.Turn.BLACKWIN : State.Turn.WHITEWIN;
+                }
 
-     if (moveCount >= MAX_MOVES_PER_GAME) {
-         return State.Turn.DRAW; // Stallo
-     }
-     
-     return state.getTurn(); // Ritorna il vincitore (es. WHITE_WIN)
- }
+                // Applica la mossa, aggiorna lo stato e controlla i pareggi
+                engine.checkMove(state, move, realGameHistory);
+                
+                // Aggiungi il NUOVO stato alla cronologia
+                realGameHistory.add(state.toString());
 
- // TODO: Importa o duplica questo metodo
- private boolean isTerminal(State state) {
-     State.Turn turn = state.getTurn();
-     return turn.equals(State.Turn.WHITEWIN) ||
-            turn.equals(State.Turn.BLACKWIN) ||
-            turn.equals(State.Turn.DRAW);
- }
- 
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("Fine Partita pareggio per errore");
+                return State.Turn.DRAW; // Errore inatteso = Pareggio tecnico
+            }
+            
+            moveCount++;
+        }
+
+        // Limite mosse raggiunto
+        System.out.println("Fine Partita pareggio pper limite mosse");
+        return State.Turn.DRAW;
+    }
 }
