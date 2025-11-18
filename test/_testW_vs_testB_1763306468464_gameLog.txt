@@ -1,0 +1,103 @@
+nov 16, 2025 4:21:08 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut <init>
+FINE: Players:	testW	vs	testB
+nov 16, 2025 4:21:08 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut <init>
+FINE: Repeated moves allowed:	0	Cache:	-1
+nov 16, 2025 4:21:08 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut <init>
+FINE: Inizio partita
+nov 16, 2025 4:21:08 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut <init>
+FINE: Stato:
+OOOBBBOOO
+OOOOBOOOO
+OOOOWOOOO
+BOOOWOOOB
+BBWWKWWBB
+BOOOWOOOB
+OOOOWOOOO
+OOOOBOOOO
+OOOBBBOOO
+-
+B
+nov 16, 2025 4:23:21 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+FINE: Turn: B Pawn from G3 to E3
+nov 16, 2025 4:23:21 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut movePawn
+FINE: Movimento pedina
+nov 16, 2025 4:23:21 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+FINE: Current draw cache size: 1
+nov 16, 2025 4:23:21 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+FINE: Stato:
+OOOOOOOOO
+OOOBOOOOO
+OOOOBOOOO
+OOOOKBOOO
+OOOOTOOOO
+OOOOOOOOO
+OOOBOOOOO
+OOOOOOOOO
+OOOOOOOOO
+-
+W
+nov 16, 2025 4:24:37 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+FINE: Turn: B Pawn from B4 to B1
+nov 16, 2025 4:24:37 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut movePawn
+FINE: Movimento pedina
+nov 16, 2025 4:24:37 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+FINE: Current draw cache size: 2
+nov 16, 2025 4:24:37 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+FINE: Stato:
+OBOOOOOOO
+OOOBOOOOO
+OOOOBOOOO
+OOOOKBOOO
+OOOOTOOOO
+OOOOOOOOO
+OOOBOOOOO
+OOOOOOOOO
+OOOOOOOOO
+-
+W
+nov 16, 2025 4:24:51 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+FINE: Turn: B Pawn from D2 to I2
+nov 16, 2025 4:24:51 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+WARNING: Mossa che scavalca una citadel
+nov 16, 2025 4:25:00 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+FINE: Turn: B Pawn from D2 to A2
+nov 16, 2025 4:25:00 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut movePawn
+FINE: Movimento pedina
+nov 16, 2025 4:25:00 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+FINE: Current draw cache size: 3
+nov 16, 2025 4:25:00 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+FINE: Stato:
+OBOOOOOOO
+BOOOOOOOO
+OOOOBOOOO
+OOOOKBOOO
+OOOOTOOOO
+OOOOOOOOO
+OOOBOOOOO
+OOOOOOOOO
+OOOOOOOOO
+-
+W
+nov 16, 2025 4:25:19 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+FINE: Turn: B Pawn from A2 to D2
+nov 16, 2025 4:25:19 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut movePawn
+FINE: Movimento pedina
+nov 16, 2025 4:25:19 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+FINE: Partita terminata in pareggio per numero di stati ripetuti
+nov 16, 2025 4:25:19 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+FINE: Equal states found: 1
+nov 16, 2025 4:25:19 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+FINE: Current draw cache size: 4
+nov 16, 2025 4:25:19 PM it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut checkMove
+FINE: Stato:
+OBOOOOOOO
+OOOBOOOOO
+OOOOBOOOO
+OOOOKBOOO
+OOOOTOOOO
+OOOOOOOOO
+OOOBOOOOO
+OOOOOOOOO
+OOOOOOOOO
+-
+D
