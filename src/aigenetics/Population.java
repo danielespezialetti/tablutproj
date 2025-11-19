@@ -38,4 +38,14 @@ public class Population implements Serializable {
                 .max(Comparator.comparingDouble(HeuristicWeights::getFitness))
                 .orElse(null);
     }
+
+	@Override
+	public String toString() {
+		StringBuilder sb=new StringBuilder();;
+		for (HeuristicWeights a : this.individuals) {
+			sb.append(a.toString());
+			sb.append(System.lineSeparator());
+		}
+		return sb.toString();
+	}
 }

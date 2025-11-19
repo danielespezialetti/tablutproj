@@ -1,108 +1,128 @@
 package aiclient;
 
-//TODO: Importa le classi REALI del tuo progetto GitHub
-//import it.unibo.ai.didattica.competition.tablut.domain.State;
-//import it.unibo.ai.didattica.competition.tablut.domain.Action;
-//import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
-//import it.unibo.ai.didattica.competition.tablut.client.TablutClient;
-//... etc ...
-
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.net.UnknownHostException;
+import java.util.HashSet;
+import java.util.Set;
 
 import aigenetics.*;
 import ailogicbusiness.*;
+import it.unibo.ai.didattica.competition.tablut.client.TablutClient;
 import it.unibo.ai.didattica.competition.tablut.domain.*;
+import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
 
-/**
-* Questa è la classe che estende TablutClient e gioca nel torneo.
-* Carica i pesi evoluti e usa MyAIPlayerLogic per scegliere la mossa.
-*/
 //public class MyTablutPlayerClient extends TablutClient { // TODO: Scommenta
-public class MyTablutPlayerClient { // Fittizio per compilare
+public class MyTablutPlayerClient extends TablutClient{
 
  private MyAIPlayerLogic aiLogic;
- private long timeoutSeconds;
- 
- // TODO: Sostituisci State.Turn con la classe reale
+ private int timeoutSeconds;
  private State.Turn myRole; 
-
- /**
-  * Costruttore del Client.
-  * Legge i parametri da riga di comando, carica i pesi,
-  * e inizializza il cervello AI.
-  */
- public State State() {
-	// TODO Auto-generated method stub
-	return null;
-}
- public MyTablutPlayerClient(String role, long timeout, String serverIP) {
-     // TODO: Chiama il costruttore della superclasse
-     // super(role, "IlTuoNomePlayer", timeout, serverIP);
-     
-     this.timeoutSeconds = timeout;
-     
-     // TODO: Imposta il tuo ruolo (WHITE o BLACK)
-     // this.myRole = (role.equalsIgnoreCase("WHITE")) ? State.Turn.WHITE : State.Turn.BLACK;
-     this.myRole = State.Turn.WHITE; // Fittizio
-     
-     // Carica i pesi giusti dal file
+ private Set<String> history;
+ 
+ public MyTablutPlayerClient(String role, int timeout, String serverIP) throws UnknownHostException, IOException{
+	 super(role, "N-CODERS", timeout, serverIP);
+     this.timeoutSeconds = timeout;   
+     this.myRole = State.Turn.valueOf(role.toUpperCase());
      String weightsFile = (this.myRole == State.Turn.WHITE) ? "white_weights.dat" : "black_weights.dat";
      HeuristicWeights weights = loadWeights(weightsFile);
-     
-     // Inizializza il cervello AI
+     this.history = new HashSet<String>();
+
      this.aiLogic = new MyAIPlayerLogic(weights, this.myRole);
      
      System.out.println("Player " + role + " inizializzato con pesi da " + weightsFile);
  }
 
- /**
-  * Metodo principale del client (come da esempio TablutRandomClient)
-  */
  public void run() {
-     
-     //[cite_start]// TODO: Implementa il ciclo di gioco come da TablutClient.java [cite: 148-152]
-     // Questo è lo pseudocodice basato sulle slide
-     
-     // 1. Connessione iniziale e invio nome (gestito da super())
-     
-     while(true) { // Il ciclo di gioco
-         try {
-             //[cite_start]// 1. Leggi lo stato dal server (bloccante) [cite: 152]
-             // this.read(); 
-             // State currentState = this.getState();
-             State currentState = State(); // Fittizio
-             
-             // Se è il mio turno, calcolo la mossa
-             if (currentState.getTurn().equals(this.myRole)) {
-                 System.out.println("È il mio turno, calcolo la mossa...");
-                 
-                 // 2. Calcola la mossa usando il cervello AI
-                 Action bestMove = this.aiLogic.findBestMove(
-                     currentState, 
-                     0, // No profondità fissa
-                     this.timeoutSeconds // Usa il timeout
-, null
-                 );
-                 
-                 //[cite_start]// 3. Invia la mossa al server [cite: 150]
-                 // this.write(bestMove);
-                 
-                 //[cite_start]// 4. Leggi lo stato aggiornato (la mia mossa) [cite: 151]
-                 // this.read(); 
-             } else {
-                 // Turno avversario, rimani in attesa
-                 System.out.println("Attendo la mossa avversaria...");
-             }
-             
-             // 5. Torna a 1 (leggi lo stato aggiornato dall'avversario)
-             
-         } catch (Exception e) {
-             // Gestisci disconnessioni, timeout, mosse illegali, etc.
-             e.printStackTrace();
-             break;
-         }
-     }
+
+		try {
+			this.declareName();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		State state;
+		System.out.println("You are player " + this.getPlayer().toString() + "!");
+
+		while (true) {
+			try {
+				this.read();
+			} catch (ClassNotFoundException | IOException e1) {
+				e1.printStackTrace();
+				System.exit(1);
+			}
+			State current = this.getCurrentState();
+			if (this.getPlayer().equals(Turn.WHITE)) {
+				// Mio turno
+				if (current.getTurn().equals(StateTablut.Turn.WHITE)) {
+					history.add(current.boardString());
+					Action action=null;
+					try {
+						action = aiLogic.findBestMove(current, timeoutSeconds, -1, history);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					System.out.println("Mossa scelta: " + action.toString());
+					try {
+						this.write(action);
+					} catch (ClassNotFoundException | IOException e) {
+						e.printStackTrace();
+					}
+				}
+				// Turno dell'avversario
+				else if (current.getTurn().equals(StateTablut.Turn.BLACK)) {
+					System.out.println("Waiting for your opponent move... ");
+				}
+				// ho vinto
+				else if (current.getTurn().equals(StateTablut.Turn.WHITEWIN)) {
+					System.out.println("YOU WIN!");
+					System.exit(0);
+				}
+				// ho perso
+				else if (current.getTurn().equals(StateTablut.Turn.BLACKWIN)) {
+					System.out.println("YOU LOSE!");
+					System.exit(0);
+				}
+				// pareggio
+				else if (current.getTurn().equals(StateTablut.Turn.DRAW)) {
+					System.out.println("DRAW!");
+					System.exit(0);
+				}
+
+			} else {
+
+				// Mio turno
+				if (current.getTurn().equals(StateTablut.Turn.BLACK)) {
+					history.add(current.boardString());
+					Action action = null;
+					try {
+						action = aiLogic.findBestMove(current, timeoutSeconds, -1, history);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					System.out.println("Mossa scelta: " + action.toString());
+					try {
+						this.write(action);
+					} catch (ClassNotFoundException | IOException e) {
+						e.printStackTrace();
+					}
+
+				}
+
+				else if (current.getTurn().equals(StateTablut.Turn.WHITE)) {
+					System.out.println("Waiting for your opponent move... ");
+				} else if (current.getTurn().equals(StateTablut.Turn.WHITEWIN)) {
+					System.out.println("YOU LOSE!");
+					System.exit(0);
+				} else if (current.getTurn().equals(StateTablut.Turn.BLACKWIN)) {
+					System.out.println("YOU WIN!");
+					System.exit(0);
+				} else if (current.getTurn().equals(StateTablut.Turn.DRAW)) {
+					System.out.println("DRAW!");
+					System.exit(0);
+				}
+			}
+		}
  }
 
 
@@ -123,11 +143,12 @@ public class MyTablutPlayerClient { // Fittizio per compilare
 
  /**
   * Main per lanciare il client
+ * @throws IOException 
+ * @throws UnknownHostException 
   */
- public static void main(String[] args) {
-     //[cite_start]// Leggi i parametri da riga di comando [cite: 178-181]
+ public static void main(String[] args) throws UnknownHostException, IOException {
      String role = args[0]; // "WHITE" o "BLACK"
-     long timeout = Long.parseLong(args[1]); // Timeout in secondi
+     int timeout = Integer.parseInt(args[1]); // Timeout in secondi
      String serverIP = args[2];
      
      MyTablutPlayerClient client = new MyTablutPlayerClient(role, timeout, serverIP);

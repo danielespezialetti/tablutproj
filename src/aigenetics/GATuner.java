@@ -16,17 +16,18 @@ import it.unibo.ai.didattica.competition.tablut.domain.State;
 public class GATuner {
 
     // --- CONFIGURAZIONE ---
-    private static final int POP_SIZE = 80;
+    private static final int POP_SIZE = 40;
     private static final int GENERATIONS = 100; // Quante generazioni AGGIUNTIVE fare
     private static final int GAMES_PER_INDIVIDUAL = 10; 
     private static final int TRAINING_DEPTH = 3; 
-    private static final int THREADS = 4; 
 
     // Nomi dei file per il checkpoint completo
     private static final String WHITE_POP_FILE = "white_population.ser";
     private static final String BLACK_POP_FILE = "black_population.ser";
 
     public static void main(String[] args) throws Exception {
+
+    	final int THREADS = Runtime.getRuntime().availableProcessors(); 
         System.out.println("=== STARTING GENETIC TRAINING ===");
         System.out.println("Threads: " + THREADS + " | Depth: " + TRAINING_DEPTH);
 
@@ -118,12 +119,9 @@ public class GATuner {
     // --- METODI VECCHI (RESTANO UGUALI) ---
 
     private static void evaluate(ExecutorService exec, Population evalPop, Population oppPop, State.Turn role) throws Exception {
-    	int count = 0;
     	List<Future<Double>> futures = new ArrayList<>();
         for (HeuristicWeights ind : evalPop.individuals) {
             futures.add(exec.submit(new FitnessEvaluator(ind, oppPop, role, GAMES_PER_INDIVIDUAL, TRAINING_DEPTH)));
-            count++;
-            System.out.println("Partite: "+count*10);
         }
         for (int i = 0; i < evalPop.size(); i++) {
             Double fitnessValue = futures.get(i).get();

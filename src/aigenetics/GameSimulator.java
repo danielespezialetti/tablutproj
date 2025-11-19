@@ -2,7 +2,6 @@ package aigenetics;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.io.IOException;
 
 import ailogicbusiness.MyAIPlayerLogic; // Assicurati che il package sia giusto
 import it.unibo.ai.didattica.competition.tablut.domain.Action;
@@ -45,7 +44,6 @@ public class GameSimulator {
             if (state.getTurn().equals(State.Turn.WHITEWIN) || 
                 state.getTurn().equals(State.Turn.BLACKWIN) || 
                 state.getTurn().equals(State.Turn.DRAW)) {
-            	System.out.println("Fine Partita legit "+state.getTurn());
                 return state.getTurn();
             }
 
@@ -60,7 +58,6 @@ public class GameSimulator {
 
                 if (move == null) {
                     // Stallo -> Sconfitta del giocatore di turno
-                	System.out.println("Fine Partita per stallo "+state.getTurn());
                     return (state.getTurn().equals(State.Turn.WHITE)) ? State.Turn.BLACKWIN : State.Turn.WHITEWIN;
                 }
 
@@ -72,7 +69,6 @@ public class GameSimulator {
 
             } catch (Exception e) {
                 e.printStackTrace();
-                System.out.println("Fine Partita pareggio per errore");
                 return State.Turn.DRAW; // Errore inatteso = Pareggio tecnico
             }
             
@@ -80,7 +76,6 @@ public class GameSimulator {
         }
 
         // Limite mosse raggiunto
-        System.out.println("Fine Partita pareggio pper limite mosse");
         return State.Turn.DRAW;
     }
 }
